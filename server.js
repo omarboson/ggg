@@ -114,13 +114,6 @@ function fallbackTutor(message, subject, language, history = []) {
     `You’re studying “${raw}”. Tell me the part you want to understand, and I’ll stay on that same topic.`;
 }
 
-function toInputMessage(role, text) {
-  return {
-    role,
-    content: [{ type: role === 'assistant' ? 'output_text' : 'input_text', text: String(text || '') }]
-  };
-}
-
 function extractResponseText(data) {
   const texts = [];
   for (const item of data?.output || []) {
@@ -130,6 +123,19 @@ function extractResponseText(data) {
     }
   }
   return texts.join('\n').trim();
+}
+
+function transcript(history = [], message = '') {
+  const lines = [];
+  const clean = Array.isArray(history) ? history.slice(-10) : [];
+  for (const m of clean) {
+    const role = m?.role === 'assistant' ? 'Tutor' : 'Student';
+    const content = String(m?.content || '').slice(0, 4000).trim();
+    if (content) lines.push(`${role}: ${content}`);
+  }
+  lines.push(`Student: ${String(message).slice(0, 6000).trim()}`);
+  lines.push('Tutor:');
+  return lines.join('\n\n');
 }
 
 app.post('/api/chat', async (req, res) => {
@@ -156,19 +162,6 @@ app.post('/api/chat', async (req, res) => {
   }
 
   try {
-    const cleanHistory = Array.isArray(history)
-      ? history.slice(-10).map((m) => ({
-          role: m.role === 'assistant' ? 'assistant' : 'user',
-          content: String(m.content || '').slice(0, 4000)
-        }))
-      : [];
-
-    const input = [
-      { role: 'system', content: [{ type: 'input_text', text: tutorPrompt({ grade, subject, language }) }] },
-      ...cleanHistory.map((m) => toInputMessage(m.role, m.content)),
-      { role: 'user', content: [{ type: 'input_text', text: String(message).slice(0, 6000) }] }
-    ];
-
     const response = await fetch(`${baseUrl}/responses`, {
       method: 'POST',
       headers: {
@@ -177,7 +170,8 @@ app.post('/api/chat', async (req, res) => {
       },
       body: JSON.stringify({
         model,
-        input,
+        instructions: tutorPrompt({ grade, subject, language }),
+        input: transcript(history, message),
         reasoning: { effort: 'low' },
         max_output_tokens: 900
       })
