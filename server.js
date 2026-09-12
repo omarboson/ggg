@@ -43,8 +43,9 @@ function compact(text) {
 function recentUserMessages(history = []) {
   return (Array.isArray(history) ? history : [])
     .filter((m) => m && m.role === 'user')
-    .map((m) => String(m.content || ''))
-    .slice(-4);
+    .map((m) => String(m.content || '').trim())
+    .filter(Boolean)
+    .slice(-6);
 }
 
 function mathFallback(message, language, history = []) {
@@ -93,49 +94,97 @@ function mathFallback(message, language, history = []) {
   return 'Let’s do this one step at a time. Write just your first step, even if you are not sure, and I’ll check that specific step rather than repeat the question.';
 }
 
+const scienceIntents = /^(explanation|explain|example|examplewithpicture|picture|diagram|showmepicture|practice|quiz|question|helpmestepbystep|explainthisconcept)$/;
+
+function lastScienceTopic(message, history = []) {
+  const candidates = [...recentUserMessages(history), String(message || '').trim()];
+  for (let i = candidates.length - 1; i >= 0; i--) {
+    const candidate = candidates[i];
+    const c = compact(candidate);
+    if (!candidate || scienceIntents.test(c)) continue;
+    if (/example|picture|diagram|explain|explanation|practice|quiz/.test(c) && c.length < 30) continue;
+    return candidate;
+  }
+  return '';
+}
+
+function scienceIntent(message) {
+  const t = compact(message);
+  if (/picture|diagram|visual/.test(t)) return 'picture';
+  if (/practice|quiz|question/.test(t)) return 'practice';
+  if (/example/.test(t)) return 'example';
+  if (/explain|explanation|concept/.test(t)) return 'explain';
+  return 'topic';
+}
+
 function scienceFallback(message, language, history = []) {
   const raw = String(message || '').trim();
   const text = compact(raw);
-  const previous = recentUserMessages(history).join(' ').toLowerCase();
+  const topicRaw = lastScienceTopic(message, history);
+  const topic = compact(topicRaw);
+  const intent = scienceIntent(raw);
+  const all = `${topic}|${text}`;
 
-  const reproductive = text.includes('reproductive') || text.includes('reproduction') || previous.includes('reproductive system');
+  const plantMale = /(male.*plant|plant.*male|stamen|anther|pollen|flower.*male|plantreproduction)/.test(all);
+  if (plantMale) {
+    if (intent === 'picture') {
+      if (language === 'French') return 'Voici un schéma simple de la partie mâle d’une fleur :\n\n       ANTHÈRE\n   [produit le pollen]\n          │\n       FILET\n   [soutient l’anthère]\n          │\n       FLEUR\n\nL’ensemble anthère + filet s’appelle l’ÉTAMINE. Le pollen contient les cellules reproductrices mâles. Sur ce schéma, quelle partie fabrique le pollen ?';
+      if (language === 'Arabic') return 'هذا مخطط مبسط للجزء الذكري في الزهرة:\n\n        المتك\n   [يُنتج حبوب اللقاح]\n          │\n       الخيط\n   [يحمل المتك]\n          │\n       الزهرة\n\nالمتك + الخيط يُكوّنان السداة. حبوب اللقاح تحمل الخلايا التناسلية الذكرية. أي جزء في المخطط يُنتج حبوب اللقاح؟';
+      return 'Here is a simple picture-style diagram of the male part of a flower:\n\n        ANTHER\n   [makes pollen]\n          │\n       FILAMENT\n   [holds anther]\n          │\n        FLOWER\n\nThe ANTHER + FILAMENT together form the STAMEN. Pollen carries the male reproductive cells. In the diagram, which part makes the pollen?';
+    }
+    if (intent === 'example') {
+      return language === 'French'
+        ? 'Exemple : dans une fleur de lys, les étamines portent des anthères remplies de pollen. Quand le pollen atteint le stigmate d’une autre fleur, la reproduction peut commencer. Quelle structure produit le pollen ?'
+        : language === 'Arabic'
+        ? 'مثال: في زهرة الزنبق تحمل الأسدية متوكًا مليئة بحبوب اللقاح. عندما تصل حبوب اللقاح إلى ميسم زهرة أخرى يمكن أن تبدأ عملية التكاثر. أي جزء يُنتج حبوب اللقاح؟'
+        : 'Example: in a lily flower, the stamens carry anthers full of pollen. When pollen reaches the stigma of another flower, reproduction can begin. Which structure produces the pollen?';
+    }
+    if (intent === 'practice') {
+      return language === 'French'
+        ? 'Question : une fleur possède un filet mais pas d’anthère. Quelle fonction reproductive mâle sera directement affectée, et pourquoi ?'
+        : language === 'Arabic'
+        ? 'سؤال: زهرة لديها خيط ولكن ليس لديها متك. ما الوظيفة التناسلية الذكرية التي ستتأثر مباشرة، ولماذا؟'
+        : 'Practice: A flower has a filament but no anther. Which male reproductive function will be directly affected, and why?';
+    }
+    return language === 'French'
+      ? 'Chez les plantes à fleurs, la partie reproductrice mâle est l’étamine. Elle est formée du filet et de l’anthère. L’anthère produit le pollen, qui contient les cellules reproductrices mâles. Le pollen doit ensuite atteindre la partie femelle de la fleur pour permettre la fécondation. Veux-tu maintenant voir un schéma simple ?'
+      : language === 'Arabic'
+      ? 'في النباتات المزهرة، الجزء التناسلي الذكري هو السداة. تتكوّن من الخيط والمتك. المتك يُنتج حبوب اللقاح التي تحمل الخلايا التناسلية الذكرية. بعد ذلك يجب أن تصل حبوب اللقاح إلى الجزء الأنثوي من الزهرة حتى يحدث الإخصاب. هل تريد الآن مخططًا مبسطًا؟'
+      : 'In flowering plants, the male reproductive part is the stamen. It is made of the filament and the anther. The anther produces pollen, which carries the male reproductive cells. The pollen then has to reach the female part of the flower for fertilization to occur. Would you like a simple diagram next?';
+  }
+
+  const reproductive = /(reproductive|reproduction)/.test(all);
   if (reproductive) {
-    if (language === 'French') return 'Le système reproducteur est l’ensemble des organes qui permettent la reproduction. Chez l’être humain, les appareils reproducteurs masculin et féminin produisent des cellules reproductrices et participent à la fécondation. À ton niveau, on peut l’étudier par ses organes, leurs fonctions et la puberté. Veux-tu commencer par l’appareil masculin, féminin, ou par le rôle général de chacun ?';
-    if (language === 'Arabic') return 'الجهاز التناسلي هو مجموعة الأعضاء التي تسمح بعملية التكاثر. عند الإنسان، ينتج الجهازان التناسليان الذكري والأنثوي الخلايا التناسلية ويساهمان في الإخصاب. يمكننا دراسته من خلال الأعضاء ووظائفها والتغيرات في مرحلة البلوغ. هل تريد أن نبدأ بالجهاز الذكري أم الأنثوي أم بالوظيفة العامة لكل منهما؟';
-    return 'The reproductive system is the group of organs involved in reproduction. In humans, the male and female reproductive systems produce reproductive cells and take part in fertilization. At Grade 7 level, we can study the main organs, what each one does, and the changes that happen during puberty. Would you like to start with the male system, the female system, or the overall function of both?';
+    if (language === 'French') return 'Le système reproducteur regroupe les organes qui permettent la reproduction. Chez l’être humain, les appareils reproducteurs masculin et féminin produisent des cellules reproductrices et participent à la fécondation. Veux-tu une explication de l’appareil masculin, féminin, ou un schéma simple ?';
+    if (language === 'Arabic') return 'الجهاز التناسلي هو مجموعة الأعضاء التي تسمح بالتكاثر. عند الإنسان، ينتج الجهازان التناسليان الذكري والأنثوي الخلايا التناسلية ويساهمان في الإخصاب. هل تريد شرح الجهاز الذكري أم الأنثوي أم مخططًا مبسطًا؟';
+    return 'The reproductive system is the group of organs involved in reproduction. In humans, the male and female reproductive systems produce reproductive cells and take part in fertilization. Would you like the male system, female system, or a simple diagram?';
   }
 
-  if (text.includes('photosynthesis') || previous.includes('photosynthesis')) {
-    if (language === 'French') return 'La photosynthèse permet aux plantes d’utiliser la lumière pour fabriquer du glucose à partir de CO2 et d’eau, tout en libérant de l’oxygène. Les chloroplastes des feuilles jouent un rôle central. Quelle source d’énergie déclenche ce processus ?';
-    if (language === 'Arabic') return 'البناء الضوئي هو استخدام النبات للطاقة الضوئية لصنع الجلوكوز من ثاني أكسيد الكربون والماء، مع إطلاق الأكسجين. وتلعب البلاستيدات الخضراء في الأوراق دورًا أساسيًا. ما مصدر الطاقة الذي يبدأ هذه العملية؟';
-    return 'Photosynthesis is how plants use light energy to make glucose from carbon dioxide and water, releasing oxygen. Chloroplasts in the leaves play a central role. What source of energy starts this process?';
+  if (/photosynthesis/.test(all)) {
+    if (language === 'French') return 'La photosynthèse permet aux plantes d’utiliser la lumière pour fabriquer du glucose à partir de CO2 et d’eau, tout en libérant de l’oxygène. Les chloroplastes jouent un rôle central. Quelle source d’énergie déclenche ce processus ?';
+    if (language === 'Arabic') return 'البناء الضوئي هو استخدام النبات للطاقة الضوئية لصنع الجلوكوز من ثاني أكسيد الكربون والماء، مع إطلاق الأكسجين. وتلعب البلاستيدات الخضراء دورًا أساسيًا. ما مصدر الطاقة الذي يبدأ هذه العملية؟';
+    return 'Photosynthesis is how plants use light energy to make glucose from carbon dioxide and water, releasing oxygen. Chloroplasts play a central role. What source of energy starts this process?';
   }
 
-  if (text.includes('digest') || previous.includes('digest')) {
+  if (/digest/.test(all)) {
     if (language === 'French') return 'Le système digestif transforme les aliments en nutriments que le corps peut absorber et utiliser. Le trajet principal est bouche → œsophage → estomac → intestin grêle → gros intestin. Où penses-tu que la plus grande partie des nutriments est absorbée ?';
     if (language === 'Arabic') return 'الجهاز الهضمي يحول الطعام إلى مواد غذائية يستطيع الجسم امتصاصها واستخدامها. المسار الرئيسي هو: الفم ← المريء ← المعدة ← الأمعاء الدقيقة ← الأمعاء الغليظة. أين تعتقد أن معظم المواد الغذائية يتم امتصاصها؟';
     return 'The digestive system breaks food down into nutrients the body can absorb and use. The main path is mouth → esophagus → stomach → small intestine → large intestine. Where do you think most nutrients are absorbed?';
   }
 
-  if (text.includes('cell') || previous.includes('cell')) {
+  if (/cell/.test(all)) {
     if (language === 'French') return 'Une cellule est l’unité de base du vivant. Elle possède une membrane, du cytoplasme et, dans de nombreuses cellules, un noyau contenant l’information génétique. Quelle structure contrôle ce qui entre et sort de la cellule ?';
     if (language === 'Arabic') return 'الخلية هي الوحدة الأساسية للحياة. تحتوي على غشاء وسيتوبلازم، وفي كثير من الخلايا نواة تحمل المعلومات الوراثية. ما الجزء الذي يتحكم بما يدخل إلى الخلية وما يخرج منها؟';
     return 'A cell is the basic unit of life. It has a membrane, cytoplasm, and in many cells a nucleus containing genetic information. Which structure controls what enters and leaves the cell?';
   }
 
-  if (/practice|quiz|question/.test(text)) {
-    if (language === 'French') return 'Question de pratique : pourquoi le cœur et les poumons doivent-ils travailler ensemble pendant un exercice physique ? Donne-moi ton idée en une ou deux phrases.';
-    if (language === 'Arabic') return 'سؤال للتدريب: لماذا يجب أن يعمل القلب والرئتان معًا أثناء التمرين الرياضي؟ أعطني فكرتك في جملة أو جملتين.';
-    return 'Practice question: Why do the heart and lungs need to work together during exercise? Give me your idea in one or two sentences.';
+  if (topicRaw && intent !== 'topic') {
+    if (language === 'French') return `Je garde le sujet « ${topicRaw} ». Cette version démo ne connaît pas encore assez ce sujet pour produire une bonne ${intent === 'picture' ? 'illustration' : 'réponse'} sans le vrai modèle IA.`;
+    if (language === 'Arabic') return `سأبقى على موضوع «${topicRaw}». النسخة التجريبية الحالية لا تعرف هذا الموضوع بما يكفي لإعطاء ${intent === 'picture' ? 'رسم جيد' : 'إجابة جيدة'} من دون توصيل نموذج الذكاء الاصطناعي الحقيقي.`;
+    return `I’m keeping the topic “${topicRaw}”. This fallback demo does not know enough about that topic yet to give a good ${intent === 'picture' ? 'visual' : 'answer'} without the real AI model connected.`;
   }
 
-  if (recentUserMessages(history).length > 0) {
-    if (language === 'French') return `Je veux rester sur ton sujet de science. Tu parles de « ${raw} ». Dis-moi si tu veux une explication, un exemple ou une question de pratique, et je continuerai sur ce sujet.`;
-    if (language === 'Arabic') return `سأبقى في موضوع العلوم الذي اخترته. أنت تسأل عن «${raw}». أخبرني هل تريد شرحًا، مثالًا، أم سؤالًا للتدريب، وسأكمل في نفس الموضوع.`;
-    return `Let’s stay with your science topic: “${raw}”. Tell me whether you want an explanation, an example, or a practice question, and I’ll continue on that topic.`;
-  }
-
-  if (language === 'French') return `Tu as choisi Sciences et demandé « ${raw} ». Je peux l’expliquer simplement, donner un exemple, ou te poser une question de vérification. Que préfères-tu ?`;
+  if (language === 'French') return `Tu as choisi Sciences et demandé « ${raw} ». Je peux l’expliquer simplement, donner un exemple, ou poser une question de vérification. Que préfères-tu ?`;
   if (language === 'Arabic') return `لقد اخترت العلوم وسألت عن «${raw}». يمكنني شرحه ببساطة، إعطاء مثال، أو طرح سؤال للتأكد من الفهم. ماذا تفضل؟`;
   return `You chose Science and asked about “${raw}”. I can explain it simply, give an example, or ask you a quick check question. Which would you like?`;
 }
