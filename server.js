@@ -36,28 +36,87 @@ function tutorPrompt({ grade, subject, language }) {
     `For mathematics, use simple notation. For science, explain cause-and-effect clearly. End most replies with one small question that keeps the student thinking.`;
 }
 
-function fallbackTutor(message, subject, language) {
-  const text = String(message || '').toLowerCase();
-  const lang = language === 'Arabic' ? 'ar' : language === 'French' ? 'fr' : 'en';
-  const responses = {
-    en: {
-      math: text.includes('fraction')
-        ? 'Let’s work it out together. First, look at the denominators. Are they already the same, or do we need a common denominator?'
-        : 'I can help step by step. What have you tried so far, and at which step did you get stuck?',
-      science: text.includes('photosynthesis')
-        ? 'Photosynthesis is how green plants use light energy to make sugar from carbon dioxide and water. Which part of the plant do you think captures most of the light?'
-        : 'Let’s make the idea clearer. Tell me what you think is happening first, and I’ll help you check the next step.'
-    },
-    fr: {
-      math: 'On va le faire étape par étape. Qu’as-tu déjà essayé, et à quelle étape es-tu bloqué(e) ?',
-      science: 'Explique-moi d’abord ce que tu penses qu’il se passe. Ensuite, je t’aiderai à vérifier l’étape suivante.'
-    },
-    ar: {
-      math: 'لنحلّها خطوة خطوة. ماذا جرّبت حتى الآن، وفي أي خطوة توقفت؟',
-      science: 'أخبرني أولاً ماذا تعتقد أنه يحدث، ثم سأساعدك في التحقق من الخطوة التالية.'
+function compact(text) {
+  return String(text || '').toLowerCase().replace(/\s+/g, '').replace(/[−–—]/g, '-');
+}
+
+function recentUserMessages(history = []) {
+  return (Array.isArray(history) ? history : [])
+    .filter((m) => m && m.role === 'user')
+    .map((m) => String(m.content || ''))
+    .slice(-4);
+}
+
+function mathFallback(message, language, history = []) {
+  const raw = String(message || '').trim();
+  const text = compact(raw);
+  const previous = recentUserMessages(history).map(compact).join(' | ');
+
+  // Context-aware path for the demo equation shown in the UI.
+  const isEquationThread = /3x\+?7=22|3x=22-7|3x=15|x=5/.test(`${previous}|${text}`);
+  if (isEquationThread) {
+    if (/x=5/.test(text)) {
+      if (language === 'French') return 'Oui — x = 5. Vérification : 3 × 5 + 7 = 22. Tu as terminé le raisonnement. Veux-tu essayer une équation semblable ?';
+      if (language === 'Arabic') return 'صحيح — x = 5. للتحقق: 3 × 5 + 7 = 22. أحسنت إنهاء الخطوات. هل تريد مسألة مشابهة؟';
+      return 'Correct — x = 5. Quick check: 3 × 5 + 7 = 22. You finished the reasoning. Want a similar equation to try on your own?';
     }
-  };
-  return responses[lang][subject === 'Science' ? 'science' : 'math'];
+    if (/3x=15/.test(text)) {
+      if (language === 'French') return 'Oui, 3x = 15 est correct. Maintenant il faut isoler x. Quelle opération peux-tu faire aux deux côtés pour enlever le 3 ?';
+      if (language === 'Arabic') return 'نعم، 3x = 15 صحيحة. الآن نريد عزل x. ما العملية التي تطبقها على الطرفين للتخلص من 3؟';
+      return 'Yes — 3x = 15 is correct. Now isolate x. What operation should you apply to both sides to remove the 3?';
+    }
+    if (/3x=22-7|22-7/.test(text)) {
+      if (language === 'French') return 'Bonne étape : tu as soustrait 7 des deux côtés. Maintenant simplifie 22 − 7. À quoi est égal 3x ?';
+      if (language === 'Arabic') return 'خطوة صحيحة: طرحت 7 من الطرفين. الآن بسّط 22 − 7. ما قيمة 3x؟';
+      return 'Good step: you subtracted 7 from both sides. Now simplify 22 − 7. What does 3x equal?';
+    }
+    if (/3x\+7=22|solve3x\+7=22/.test(text)) {
+      if (language === 'French') return 'Commençons par isoler le terme avec x. Quelle opération annule le +7 des deux côtés ?';
+      if (language === 'Arabic') return 'لنبدأ بعزل الحد الذي يحتوي على x. ما العملية التي تلغي +7 من الطرفين؟';
+      return 'Start by isolating the term with x. What operation would undo the +7 on both sides?';
+    }
+  }
+
+  // Recognize a student showing any algebra attempt instead of repeating the opening question.
+  if (/x|=/.test(text) && /\d/.test(text)) {
+    if (language === 'French') return `Je vois ton étape « ${raw} ». Explique-moi en une phrase quelle opération tu viens d'appliquer aux deux côtés ; je te dirai si elle est correcte et quelle est la prochaine étape.`;
+    if (language === 'Arabic') return `أرى خطوتك «${raw}». أخبرني بجملة واحدة ما العملية التي طبّقتها على الطرفين، وسأتحقق منها ثم أعطيك الخطوة التالية.`;
+    return `I can see your step: “${raw}”. Tell me what operation you applied to both sides, and I’ll check that exact step and guide you to the next one.`;
+  }
+
+  if (text.includes('fraction')) {
+    if (language === 'French') return 'Regardons d’abord les dénominateurs. Sont-ils déjà identiques, ou faut-il trouver un dénominateur commun ?';
+    if (language === 'Arabic') return 'لننظر أولاً إلى المقامات. هل هي متساوية أم نحتاج إلى مقام مشترك؟';
+    return 'Let’s work it out together. First look at the denominators. Are they already the same, or do we need a common denominator?';
+  }
+
+  if (language === 'French') return 'Je vais suivre ton raisonnement étape par étape. Écris seulement ta première étape, même si tu n’es pas sûr(e), et je la vérifierai.';
+  if (language === 'Arabic') return 'سأتابع معك خطوة بخطوة. اكتب أول خطوة تفكر بها حتى لو لم تكن متأكدًا، وسأتحقق منها.';
+  return 'Let’s do this one step at a time. Write just your first step, even if you are not sure, and I’ll check that specific step rather than repeat the question.';
+}
+
+function scienceFallback(message, language, history = []) {
+  const text = compact(message);
+  const hasHistory = recentUserMessages(history).length > 0;
+  if (text.includes('photosynthesis')) {
+    if (language === 'French') return 'La photosynthèse permet aux plantes d’utiliser la lumière pour fabriquer du glucose à partir de CO2 et d’eau. Quelle partie de la plante capte la plupart de la lumière ?';
+    if (language === 'Arabic') return 'البناء الضوئي هو استخدام النبات للضوء لصنع الجلوكوز من ثاني أكسيد الكربون والماء. أي جزء من النبات يلتقط معظم الضوء؟';
+    return 'Photosynthesis is how plants use light energy to make glucose from carbon dioxide and water. Which part of the plant captures most of the light?';
+  }
+  if (hasHistory) {
+    if (language === 'French') return 'Je suis ton raisonnement. Donne-moi ta prochaine idée ou observation, et je te dirai précisément ce qui est juste et ce qu’il faut corriger.';
+    if (language === 'Arabic') return 'أنا أتابع تفكيرك. أعطني فكرتك أو ملاحظتك التالية، وسأوضح بدقة ما هو صحيح وما يحتاج إلى تصحيح.';
+    return 'I’m following your reasoning. Give me your next idea or observation, and I’ll respond to that exact step rather than restart the explanation.';
+  }
+  if (language === 'French') return 'Explique-moi ce que tu penses qu’il se passe d’abord. Ensuite je t’aiderai à vérifier l’étape suivante.';
+  if (language === 'Arabic') return 'أخبرني أولاً ماذا تعتقد أنه يحدث، ثم سأساعدك في التحقق من الخطوة التالية.';
+  return 'Tell me what you think is happening first, and I’ll help you check the next step.';
+}
+
+function fallbackTutor(message, subject, language, history = []) {
+  return subject === 'Science'
+    ? scienceFallback(message, language, history)
+    : mathFallback(message, language, history);
 }
 
 app.post('/api/chat', async (req, res) => {
@@ -77,7 +136,7 @@ app.post('/api/chat', async (req, res) => {
 
   if (!apiKey) {
     return res.json({
-      reply: fallbackTutor(message, subject, language),
+      reply: fallbackTutor(message, subject, language, history),
       remaining: quota.remaining,
       mode: 'demo'
     });
@@ -116,7 +175,7 @@ app.post('/api/chat', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.json({
-      reply: fallbackTutor(message, subject, language),
+      reply: fallbackTutor(message, subject, language, history),
       remaining: quota.remaining,
       mode: 'demo-fallback'
     });
