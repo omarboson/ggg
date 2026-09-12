@@ -30,11 +30,11 @@
     <div class="grid">
       <section class="card chat-card">
         <div class="chat-title"><h2>Ask your AI Tutor</h2><span class="status" id="mode">Checking AI…</span></div>
-        <div class="messages" id="messages"><div class="msg ai">Hi. I’ll help you understand the problem rather than just give you the answer. What are you working on today?</div></div>
+        <div class="messages" id="messages"><div class="msg ai">Hi. I’ll help you understand the subject you selected. Ask me a topic or a problem.</div></div>
         <div class="suggestions">
-          <button class="chip" data-prompt="Explain fractions to me">Explain a concept</button>
-          <button class="chip" data-prompt="Help me solve 3x + 7 = 22 step by step">Help me step by step</button>
-          <button class="chip" data-prompt="Give me one practice question for my grade">Give me practice</button>
+          <button class="chip" data-action="explain">Explain this concept</button>
+          <button class="chip" data-action="step">Help me step by step</button>
+          <button class="chip" data-action="practice">Give me practice</button>
         </div>
         <div class="composer"><textarea id="input" placeholder="Type your question here…"></textarea><button class="send" id="send">Send</button></div>
       </section>
@@ -43,7 +43,7 @@
         <section class="card small"><h3>Today's AI allowance</h3><div class="quota"><span>Questions remaining</span><b id="remaining">20 / 20</b></div><div class="bar"><span id="quotaBar" style="width:100%"></span></div><p class="notice">The pilot uses a daily question limit so we can measure usage and cost.</p></section>
         <section class="card small"><h3>My subjects</h3><div class="subjects"><button class="subject math" data-subject="Mathematics"><b>Mathematics</b><small>Practice & help</small></button><button class="subject science" data-subject="Science"><b>Science</b><small>Concepts & examples</small></button></div></section>
         <section class="card small"><h3>Progress preview</h3><div class="progress-row"><span>Math practice</span><div class="bar"><span style="width:62%;background:var(--blue)"></span></div><b>62%</b></div><div class="progress-row"><span>Science practice</span><div class="bar"><span style="width:48%;background:var(--green)"></span></div><b>48%</b></div><p class="notice">Preview only. Real mastery tracking comes in the Adaptive tier.</p></section>
-        <section class="card small"><h3>How the tutor helps</h3><p class="notice">1. Understands what you are trying to learn.<br>2. Gives a hint or guiding question.<br>3. Checks your reasoning.<br>4. Explains one step when needed.<br>5. Lets you finish the work.</p></section>
+        <section class="card small"><h3>How the tutor helps</h3><p class="notice">1. Understands the selected subject.<br>2. Explains a concept or gives a hint.<br>3. Checks your reasoning.<br>4. Continues the same topic.<br>5. Gives practice when requested.</p></section>
       </aside>
     </div>
     <div class="footer">Prototype based on open-source Socratic tutoring principles. No school records are connected in this demo.</div>
@@ -56,14 +56,36 @@
   const send = $('send');
   let history = [];
   let remaining = 20;
+  let lastUserText = '';
 
   function addMessage(role, text){
     const el=document.createElement('div'); el.className='msg '+(role==='assistant'?'ai':'user'); el.textContent=text; messages.appendChild(el); messages.scrollTop=messages.scrollHeight;
   }
   function updateQuota(n){remaining=n; $('remaining').textContent=`${n} / 20`; $('quotaBar').style.width=`${Math.max(0,Math.min(100,n/20*100))}%`;}
   async function checkHealth(){try{const r=await fetch('/api/health');const d=await r.json();$('mode').textContent=d.aiConfigured?'AI connected':'Interactive demo';updateQuota(d.dailyLimit||20);}catch{$('mode').textContent='Demo';}}
-  async function ask(){
-    const text=input.value.trim(); if(!text)return; addMessage('user',text); input.value=''; send.disabled=true;
+
+  function resetConversation(label){
+    history=[]; lastUserText=''; messages.innerHTML='';
+    addMessage('assistant',`New ${label} conversation started. What would you like to learn?`);
+  }
+
+  function actionPrompt(action){
+    const subject=$('subject').value;
+    const grade=$('grade').value;
+    const topic=lastUserText.trim();
+    if(action==='explain'){
+      if(topic) return `Explain this concept more clearly: ${topic}`;
+      return subject==='Science' ? 'Explain photosynthesis to me' : 'Explain fractions to me';
+    }
+    if(action==='step'){
+      if(topic) return `Help me step by step with: ${topic}`;
+      return subject==='Science' ? 'Help me understand the digestive system step by step' : 'Help me solve 3x + 7 = 22 step by step';
+    }
+    return `Give me one Grade ${grade} ${subject} practice question. Do not give the answer yet.`;
+  }
+
+  async function ask(forcedText){
+    const text=(forcedText || input.value).trim(); if(!text)return; lastUserText=text; addMessage('user',text); input.value=''; send.disabled=true;
     try{
       const body={message:text,grade:$('grade').value,subject:$('subject').value,language:$('language').value,history};
       const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); const d=await r.json();
@@ -72,9 +94,13 @@
     }catch(e){addMessage('assistant',e.message||'Something went wrong. Please try again.');}
     finally{send.disabled=false;input.focus();}
   }
-  send.addEventListener('click',ask); input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();ask();}});
-  document.querySelectorAll('[data-prompt]').forEach(b=>b.addEventListener('click',()=>{input.value=b.dataset.prompt;input.focus();}));
-  document.querySelectorAll('[data-subject]').forEach(b=>b.addEventListener('click',()=>{$('subject').value=b.dataset.subject;input.focus();}));
+
+  send.addEventListener('click',()=>ask()); input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();ask();}});
+  document.querySelectorAll('[data-action]').forEach(b=>b.addEventListener('click',()=>ask(actionPrompt(b.dataset.action))));
+  document.querySelectorAll('[data-subject]').forEach(b=>b.addEventListener('click',()=>{$('subject').value=b.dataset.subject;resetConversation(b.dataset.subject);input.focus();}));
+  $('subject').addEventListener('change',()=>resetConversation($('subject').value));
+  $('grade').addEventListener('change',()=>resetConversation(`Grade ${$('grade').value} ${$('subject').value}`));
+  $('language').addEventListener('change',()=>resetConversation(`${$('subject').value} in ${$('language').value}`));
   checkHealth();
 </script>
 </body>
