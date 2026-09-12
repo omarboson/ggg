@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Essential AI Tutor</title>
+  <style>
+    :root{--bg:#f4f8ff;--card:#fff;--ink:#14213d;--muted:#6b7892;--blue:#1769e0;--blue2:#4da2ff;--line:#dfe8f5;--green:#28a96b;--orange:#f59e0b;--red:#ef5261;--purple:#7c4dff;--shadow:0 12px 30px rgba(34,74,130,.08)}*{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--ink)}button,select,textarea{font:inherit}.app{min-height:100vh;display:grid;grid-template-columns:220px 1fr}.side{background:#fff;border-right:1px solid var(--line);padding:24px 16px;display:flex;flex-direction:column;gap:24px}.brand{display:flex;gap:10px;align-items:center;font-weight:800;font-size:20px}.brand .logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--blue),var(--blue2));display:grid;place-items:center;color:#fff}.tag{font-size:11px;color:var(--muted);font-weight:600}.nav{display:grid;gap:8px}.nav button{border:0;background:transparent;text-align:left;padding:12px 14px;border-radius:12px;color:#31415f;cursor:pointer}.nav button.active{background:#eaf3ff;color:var(--blue);font-weight:700}.side-note{margin-top:auto;background:#f7faff;border:1px solid var(--line);border-radius:14px;padding:14px;font-size:12px;line-height:1.45;color:var(--muted)}main{padding:26px;max-width:1280px;width:100%;margin:auto}.top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:20px}.top h1{margin:0;font-size:30px}.top p{margin:6px 0 0;color:var(--muted)}.controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.controls select{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 10px;color:var(--ink)}.grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}.chat-card{padding:18px;min-height:580px;display:flex;flex-direction:column}.chat-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.chat-title h2{font-size:20px;margin:0}.status{font-size:12px;border-radius:999px;padding:6px 9px;background:#eef7f1;color:#26774c}.messages{flex:1;display:flex;flex-direction:column;gap:12px;overflow:auto;min-height:340px;max-height:520px;padding:8px 2px}.msg{max-width:82%;padding:12px 14px;border-radius:16px;line-height:1.48;white-space:pre-wrap}.msg.ai{background:#edf5ff;border-bottom-left-radius:6px}.msg.user{background:var(--blue);color:#fff;margin-left:auto;border-bottom-right-radius:6px}.suggestions{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 10px;font-size:12px;color:#405271;cursor:pointer}.composer{display:grid;grid-template-columns:1fr auto;gap:9px;border-top:1px solid var(--line);padding-top:13px}.composer textarea{resize:none;min-height:74px;border:1px solid var(--line);border-radius:14px;padding:12px;outline:none}.composer textarea:focus{border-color:#8bbcf7;box-shadow:0 0 0 3px #e9f3ff}.send{border:0;background:var(--blue);color:#fff;border-radius:13px;padding:0 18px;font-weight:700;cursor:pointer}.send:disabled{opacity:.55}.right{display:grid;gap:14px;align-content:start}.small{padding:16px}.small h3{margin:0 0 12px;font-size:15px}.quota{display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px}.bar{height:8px;background:#e9eef7;border-radius:999px;overflow:hidden}.bar span{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--blue2));width:0}.subjects{display:grid;grid-template-columns:1fr 1fr;gap:9px}.subject{border:1px solid var(--line);background:#fff;border-radius:13px;padding:13px;text-align:left;cursor:pointer}.subject b{display:block}.subject small{color:var(--muted)}.subject.math{border-left:4px solid var(--blue)}.subject.science{border-left:4px solid var(--green)}.progress-row{display:grid;grid-template-columns:90px 1fr 36px;gap:8px;align-items:center;font-size:12px;margin:9px 0}.progress-row .bar{height:7px}.notice{font-size:12px;color:var(--muted);line-height:1.45}.footer{margin-top:16px;text-align:center;color:#8190aa;font-size:11px}.mobile-top{display:none}@media(max-width:900px){.app{grid-template-columns:1fr}.side{display:none}.mobile-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}.grid{grid-template-columns:1fr}.right{grid-template-columns:1fr 1fr}.top{display:block}.controls{justify-content:flex-start;margin-top:12px}}@media(max-width:600px){main{padding:14px}.right{grid-template-columns:1fr}.top h1{font-size:25px}.msg{max-width:92%}.composer{grid-template-columns:1fr}.send{height:44px}.controls select{flex:1;min-width:100px}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div><div class="brand"><div class="logo">AI</div><div>Essential Tutor<div class="tag">Learn. Think. Improve.</div></div></div></div>
+    <div class="nav"><button class="active">⌂ Home</button><button>💬 AI Tutor</button><button>📚 Subjects</button><button>✏ Practice</button><button>📈 My Progress</button></div>
+    <div class="side-note"><b>Pilot version</b><br>This tutor is designed to guide students with hints and questions instead of simply giving homework answers.</div>
+  </aside>
+
+  <main>
+    <div class="mobile-top"><div class="brand"><div class="logo">AI</div><div>Essential Tutor</div></div><span class="tag">Pilot</span></div>
+    <div class="top">
+      <div><h1>Welcome to your AI Tutor</h1><p>Choose your grade and subject, then ask for help step by step.</p></div>
+      <div class="controls">
+        <select id="grade"><option>6</option><option selected>7</option><option>8</option><option>9</option></select>
+        <select id="subject"><option selected>Mathematics</option><option>Science</option></select>
+        <select id="language"><option selected>English</option><option>French</option><option>Arabic</option></select>
+      </div>
+    </div>
+
+    <div class="grid">
+      <section class="card chat-card">
+        <div class="chat-title"><h2>Ask your AI Tutor</h2><span class="status" id="mode">Checking AI…</span></div>
+        <div class="messages" id="messages"><div class="msg ai">Hi. I’ll help you understand the problem rather than just give you the answer. What are you working on today?</div></div>
+        <div class="suggestions">
+          <button class="chip" data-prompt="Explain fractions to me">Explain a concept</button>
+          <button class="chip" data-prompt="Help me solve 3x + 7 = 22 step by step">Help me step by step</button>
+          <button class="chip" data-prompt="Give me one practice question for my grade">Give me practice</button>
+        </div>
+        <div class="composer"><textarea id="input" placeholder="Type your question here…"></textarea><button class="send" id="send">Send</button></div>
+      </section>
+
+      <aside class="right">
+        <section class="card small"><h3>Today's AI allowance</h3><div class="quota"><span>Questions remaining</span><b id="remaining">20 / 20</b></div><div class="bar"><span id="quotaBar" style="width:100%"></span></div><p class="notice">The pilot uses a daily question limit so we can measure usage and cost.</p></section>
+        <section class="card small"><h3>My subjects</h3><div class="subjects"><button class="subject math" data-subject="Mathematics"><b>Mathematics</b><small>Practice & help</small></button><button class="subject science" data-subject="Science"><b>Science</b><small>Concepts & examples</small></button></div></section>
+        <section class="card small"><h3>Progress preview</h3><div class="progress-row"><span>Math practice</span><div class="bar"><span style="width:62%;background:var(--blue)"></span></div><b>62%</b></div><div class="progress-row"><span>Science practice</span><div class="bar"><span style="width:48%;background:var(--green)"></span></div><b>48%</b></div><p class="notice">Preview only. Real mastery tracking comes in the Adaptive tier.</p></section>
+        <section class="card small"><h3>How the tutor helps</h3><p class="notice">1. Understands what you are trying to learn.<br>2. Gives a hint or guiding question.<br>3. Checks your reasoning.<br>4. Explains one step when needed.<br>5. Lets you finish the work.</p></section>
+      </aside>
+    </div>
+    <div class="footer">Prototype based on open-source Socratic tutoring principles. No school records are connected in this demo.</div>
+  </main>
+</div>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const messages = $('messages');
+  const input = $('input');
+  const send = $('send');
+  let history = [];
+  let remaining = 20;
+
+  function addMessage(role, text){
+    const el=document.createElement('div'); el.className='msg '+(role==='assistant'?'ai':'user'); el.textContent=text; messages.appendChild(el); messages.scrollTop=messages.scrollHeight;
+  }
+  function updateQuota(n){remaining=n; $('remaining').textContent=`${n} / 20`; $('quotaBar').style.width=`${Math.max(0,Math.min(100,n/20*100))}%`;}
+  async function checkHealth(){try{const r=await fetch('/api/health');const d=await r.json();$('mode').textContent=d.aiConfigured?'AI connected':'Interactive demo';updateQuota(d.dailyLimit||20);}catch{$('mode').textContent='Demo';}}
+  async function ask(){
+    const text=input.value.trim(); if(!text)return; addMessage('user',text); input.value=''; send.disabled=true;
+    try{
+      const body={message:text,grade:$('grade').value,subject:$('subject').value,language:$('language').value,history};
+      const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); const d=await r.json();
+      if(!r.ok) throw new Error(d.error||'Request failed');
+      addMessage('assistant',d.reply); history=[...history,{role:'user',content:text},{role:'assistant',content:d.reply}].slice(-8); updateQuota(d.remaining); $('mode').textContent=d.mode==='ai'?'AI connected':'Interactive demo';
+    }catch(e){addMessage('assistant',e.message||'Something went wrong. Please try again.');}
+    finally{send.disabled=false;input.focus();}
+  }
+  send.addEventListener('click',ask); input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();ask();}});
+  document.querySelectorAll('[data-prompt]').forEach(b=>b.addEventListener('click',()=>{input.value=b.dataset.prompt;input.focus();}));
+  document.querySelectorAll('[data-subject]').forEach(b=>b.addEventListener('click',()=>{$('subject').value=b.dataset.subject;input.focus();}));
+  checkHealth();
+</script>
+</body>
+</html>
