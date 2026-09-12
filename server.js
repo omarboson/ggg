@@ -52,7 +52,6 @@ function mathFallback(message, language, history = []) {
   const text = compact(raw);
   const previous = recentUserMessages(history).map(compact).join(' | ');
 
-  // Context-aware path for the demo equation shown in the UI.
   const isEquationThread = /3x\+?7=22|3x=22-7|3x=15|x=5/.test(`${previous}|${text}`);
   if (isEquationThread) {
     if (/x=5/.test(text)) {
@@ -77,7 +76,6 @@ function mathFallback(message, language, history = []) {
     }
   }
 
-  // Recognize a student showing any algebra attempt instead of repeating the opening question.
   if (/x|=/.test(text) && /\d/.test(text)) {
     if (language === 'French') return `Je vois ton étape « ${raw} ». Explique-moi en une phrase quelle opération tu viens d'appliquer aux deux côtés ; je te dirai si elle est correcte et quelle est la prochaine étape.`;
     if (language === 'Arabic') return `أرى خطوتك «${raw}». أخبرني بجملة واحدة ما العملية التي طبّقتها على الطرفين، وسأتحقق منها ثم أعطيك الخطوة التالية.`;
@@ -85,9 +83,9 @@ function mathFallback(message, language, history = []) {
   }
 
   if (text.includes('fraction')) {
-    if (language === 'French') return 'Regardons d’abord les dénominateurs. Sont-ils déjà identiques, ou faut-il trouver un dénominateur commun ?';
-    if (language === 'Arabic') return 'لننظر أولاً إلى المقامات. هل هي متساوية أم نحتاج إلى مقام مشترك؟';
-    return 'Let’s work it out together. First look at the denominators. Are they already the same, or do we need a common denominator?';
+    if (language === 'French') return 'Une fraction représente une partie d’un tout. Le nombre du haut est le numérateur et celui du bas le dénominateur. Par exemple, 3/4 signifie 3 parts sur 4 parts égales. Si tu veux additionner deux fractions, quelle est la première chose à vérifier à propos des dénominateurs ?';
+    if (language === 'Arabic') return 'الكسر يمثل جزءًا من كل. العدد في الأعلى هو البسط، والعدد في الأسفل هو المقام. مثلًا 3/4 تعني 3 أجزاء من أصل 4 أجزاء متساوية. إذا أردنا جمع كسرين، ما أول شيء يجب أن نتحقق منه في المقامات؟';
+    return 'A fraction represents part of a whole. The top number is the numerator and the bottom number is the denominator. For example, 3/4 means 3 out of 4 equal parts. If you want to add two fractions, what is the first thing you should check about the denominators?';
   }
 
   if (language === 'French') return 'Je vais suivre ton raisonnement étape par étape. Écris seulement ta première étape, même si tu n’es pas sûr(e), et je la vérifierai.';
@@ -96,21 +94,50 @@ function mathFallback(message, language, history = []) {
 }
 
 function scienceFallback(message, language, history = []) {
-  const text = compact(message);
-  const hasHistory = recentUserMessages(history).length > 0;
-  if (text.includes('photosynthesis')) {
-    if (language === 'French') return 'La photosynthèse permet aux plantes d’utiliser la lumière pour fabriquer du glucose à partir de CO2 et d’eau. Quelle partie de la plante capte la plupart de la lumière ?';
-    if (language === 'Arabic') return 'البناء الضوئي هو استخدام النبات للضوء لصنع الجلوكوز من ثاني أكسيد الكربون والماء. أي جزء من النبات يلتقط معظم الضوء؟';
-    return 'Photosynthesis is how plants use light energy to make glucose from carbon dioxide and water. Which part of the plant captures most of the light?';
+  const raw = String(message || '').trim();
+  const text = compact(raw);
+  const previous = recentUserMessages(history).join(' ').toLowerCase();
+
+  const reproductive = text.includes('reproductive') || text.includes('reproduction') || previous.includes('reproductive system');
+  if (reproductive) {
+    if (language === 'French') return 'Le système reproducteur est l’ensemble des organes qui permettent la reproduction. Chez l’être humain, les appareils reproducteurs masculin et féminin produisent des cellules reproductrices et participent à la fécondation. À ton niveau, on peut l’étudier par ses organes, leurs fonctions et la puberté. Veux-tu commencer par l’appareil masculin, féminin, ou par le rôle général de chacun ?';
+    if (language === 'Arabic') return 'الجهاز التناسلي هو مجموعة الأعضاء التي تسمح بعملية التكاثر. عند الإنسان، ينتج الجهازان التناسليان الذكري والأنثوي الخلايا التناسلية ويساهمان في الإخصاب. يمكننا دراسته من خلال الأعضاء ووظائفها والتغيرات في مرحلة البلوغ. هل تريد أن نبدأ بالجهاز الذكري أم الأنثوي أم بالوظيفة العامة لكل منهما؟';
+    return 'The reproductive system is the group of organs involved in reproduction. In humans, the male and female reproductive systems produce reproductive cells and take part in fertilization. At Grade 7 level, we can study the main organs, what each one does, and the changes that happen during puberty. Would you like to start with the male system, the female system, or the overall function of both?';
   }
-  if (hasHistory) {
-    if (language === 'French') return 'Je suis ton raisonnement. Donne-moi ta prochaine idée ou observation, et je te dirai précisément ce qui est juste et ce qu’il faut corriger.';
-    if (language === 'Arabic') return 'أنا أتابع تفكيرك. أعطني فكرتك أو ملاحظتك التالية، وسأوضح بدقة ما هو صحيح وما يحتاج إلى تصحيح.';
-    return 'I’m following your reasoning. Give me your next idea or observation, and I’ll respond to that exact step rather than restart the explanation.';
+
+  if (text.includes('photosynthesis') || previous.includes('photosynthesis')) {
+    if (language === 'French') return 'La photosynthèse permet aux plantes d’utiliser la lumière pour fabriquer du glucose à partir de CO2 et d’eau, tout en libérant de l’oxygène. Les chloroplastes des feuilles jouent un rôle central. Quelle source d’énergie déclenche ce processus ?';
+    if (language === 'Arabic') return 'البناء الضوئي هو استخدام النبات للطاقة الضوئية لصنع الجلوكوز من ثاني أكسيد الكربون والماء، مع إطلاق الأكسجين. وتلعب البلاستيدات الخضراء في الأوراق دورًا أساسيًا. ما مصدر الطاقة الذي يبدأ هذه العملية؟';
+    return 'Photosynthesis is how plants use light energy to make glucose from carbon dioxide and water, releasing oxygen. Chloroplasts in the leaves play a central role. What source of energy starts this process?';
   }
-  if (language === 'French') return 'Explique-moi ce que tu penses qu’il se passe d’abord. Ensuite je t’aiderai à vérifier l’étape suivante.';
-  if (language === 'Arabic') return 'أخبرني أولاً ماذا تعتقد أنه يحدث، ثم سأساعدك في التحقق من الخطوة التالية.';
-  return 'Tell me what you think is happening first, and I’ll help you check the next step.';
+
+  if (text.includes('digest') || previous.includes('digest')) {
+    if (language === 'French') return 'Le système digestif transforme les aliments en nutriments que le corps peut absorber et utiliser. Le trajet principal est bouche → œsophage → estomac → intestin grêle → gros intestin. Où penses-tu que la plus grande partie des nutriments est absorbée ?';
+    if (language === 'Arabic') return 'الجهاز الهضمي يحول الطعام إلى مواد غذائية يستطيع الجسم امتصاصها واستخدامها. المسار الرئيسي هو: الفم ← المريء ← المعدة ← الأمعاء الدقيقة ← الأمعاء الغليظة. أين تعتقد أن معظم المواد الغذائية يتم امتصاصها؟';
+    return 'The digestive system breaks food down into nutrients the body can absorb and use. The main path is mouth → esophagus → stomach → small intestine → large intestine. Where do you think most nutrients are absorbed?';
+  }
+
+  if (text.includes('cell') || previous.includes('cell')) {
+    if (language === 'French') return 'Une cellule est l’unité de base du vivant. Elle possède une membrane, du cytoplasme et, dans de nombreuses cellules, un noyau contenant l’information génétique. Quelle structure contrôle ce qui entre et sort de la cellule ?';
+    if (language === 'Arabic') return 'الخلية هي الوحدة الأساسية للحياة. تحتوي على غشاء وسيتوبلازم، وفي كثير من الخلايا نواة تحمل المعلومات الوراثية. ما الجزء الذي يتحكم بما يدخل إلى الخلية وما يخرج منها؟';
+    return 'A cell is the basic unit of life. It has a membrane, cytoplasm, and in many cells a nucleus containing genetic information. Which structure controls what enters and leaves the cell?';
+  }
+
+  if (/practice|quiz|question/.test(text)) {
+    if (language === 'French') return 'Question de pratique : pourquoi le cœur et les poumons doivent-ils travailler ensemble pendant un exercice physique ? Donne-moi ton idée en une ou deux phrases.';
+    if (language === 'Arabic') return 'سؤال للتدريب: لماذا يجب أن يعمل القلب والرئتان معًا أثناء التمرين الرياضي؟ أعطني فكرتك في جملة أو جملتين.';
+    return 'Practice question: Why do the heart and lungs need to work together during exercise? Give me your idea in one or two sentences.';
+  }
+
+  if (recentUserMessages(history).length > 0) {
+    if (language === 'French') return `Je veux rester sur ton sujet de science. Tu parles de « ${raw} ». Dis-moi si tu veux une explication, un exemple ou une question de pratique, et je continuerai sur ce sujet.`;
+    if (language === 'Arabic') return `سأبقى في موضوع العلوم الذي اخترته. أنت تسأل عن «${raw}». أخبرني هل تريد شرحًا، مثالًا، أم سؤالًا للتدريب، وسأكمل في نفس الموضوع.`;
+    return `Let’s stay with your science topic: “${raw}”. Tell me whether you want an explanation, an example, or a practice question, and I’ll continue on that topic.`;
+  }
+
+  if (language === 'French') return `Tu as choisi Sciences et demandé « ${raw} ». Je peux l’expliquer simplement, donner un exemple, ou te poser une question de vérification. Que préfères-tu ?`;
+  if (language === 'Arabic') return `لقد اخترت العلوم وسألت عن «${raw}». يمكنني شرحه ببساطة، إعطاء مثال، أو طرح سؤال للتأكد من الفهم. ماذا تفضل؟`;
+  return `You chose Science and asked about “${raw}”. I can explain it simply, give an example, or ask you a quick check question. Which would you like?`;
 }
 
 function fallbackTutor(message, subject, language, history = []) {
